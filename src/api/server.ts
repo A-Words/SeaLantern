@@ -104,4 +104,8 @@ export const serverApi = {
   async updateServerName(id: string, name: string): Promise<void> {
     return tauriInvoke("update_server_name", { id, name });
   },
+
+  async updateServerMemory(id: string, maxMemory: number, minMemory: number): Promise<void> {
+    return tauriInvoke("update_server_memory", { id, maxMemory, minMemory });
+  },
 };

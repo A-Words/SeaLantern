@@ -116,3 +116,8 @@ pub fn get_server_logs(id: String, since: usize) -> Vec<String> {
 pub fn update_server_name(id: String, name: String) -> Result<(), String> {
     manager().update_server_name(&id, &name)
 }
+
+#[tauri::command]
+pub fn update_server_memory(id: String, max_memory: u32, min_memory: u32) -> Result<(), String> {
+    manager().update_server_memory(&id, max_memory, min_memory)
+}

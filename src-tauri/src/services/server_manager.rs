@@ -880,6 +880,31 @@ impl ServerManager {
         }
     }
 
+    pub fn update_server_memory(
+        &self,
+        id: &str,
+        max_memory: u32,
+        min_memory: u32,
+    ) -> Result<(), String> {
+        if max_memory == 0 || min_memory == 0 {
+            return Err("内存参数必须大于 0".to_string());
+        }
+        if min_memory > max_memory {
+            return Err("最小内存不能大于最大内存".to_string());
+        }
+
+        let mut servers = self.servers.lock().unwrap();
+        if let Some(server) = servers.iter_mut().find(|s| s.id == id) {
+            server.max_memory = max_memory;
+            server.min_memory = min_memory;
+            drop(servers);
+            self.save();
+            Ok(())
+        } else {
+            Err("未找到服务器".to_string())
+        }
+    }
+
     pub fn stop_all_servers(&self) {
         let ids: Vec<String> = self.processes.lock().unwrap().keys().cloned().collect();
         for id in ids {

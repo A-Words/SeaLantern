@@ -206,6 +206,8 @@
     "no_server": "Selecciona un servidor",
     "loading": "Cargando configuración...",
     "no_config": "No se encontró configuración. Inicia el servidor una vez para generar server.properties",
+    "memory_max_desc": "Memoria máxima de arranque (MB). Los cambios se aplican en el próximo inicio.",
+    "memory_min_desc": "Memoria mínima de arranque (MB). Los cambios se aplican en el próximo inicio y debe ser <= memoria máxima.",
     "saved": "Configuración guardada",
     "server_properties": "Propiedades del servidor",
     "server_plugins": "Plugins del servidor",

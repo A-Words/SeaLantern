@@ -206,6 +206,8 @@
     "no_server": "請選擇一個伺服器來編輯設定",
     "loading": "載入設定中...",
     "no_config": "沒有找到設定檔，請先啟動一次伺服器以產生 server.properties",
+    "memory_max_desc": "伺服器啟動最大記憶體（MB），修改後將於下次啟動生效",
+    "memory_min_desc": "伺服器啟動最小記憶體（MB），修改後將於下次啟動生效，且不能大於最大記憶體",
     "saved": "設定已儲存",
     "server_properties": "伺服器屬性",
     "server_plugins": "伺服器外掛",

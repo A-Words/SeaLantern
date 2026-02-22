@@ -206,6 +206,8 @@
     "no_server": "Bitte wähle einen Server zum Bearbeiten der Konfiguration aus",
     "loading": "Lade Konfiguration...",
     "no_config": "Keine Konfigurationsdatei gefunden. Bitte starte den Server einmal, um server.properties zu generieren",
+    "memory_max_desc": "Maximaler Startspeicher in MB. Änderungen gelten beim nächsten Start.",
+    "memory_min_desc": "Minimaler Startspeicher in MB. Änderungen gelten beim nächsten Start und müssen <= Maximalspeicher sein.",
     "saved": "Konfiguration gespeichert",
     "server_properties": "Server-Eigenschaften",
     "server_plugins": "Server-Plugins",

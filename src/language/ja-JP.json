@@ -206,6 +206,8 @@
     "no_server": "サーバーを選択してください",
     "loading": "設定を読み込み中...",
     "no_config": "設定ファイルが見つかりません。一度サーバーを起動して server.properties を生成してください",
+    "memory_max_desc": "起動時の最大メモリ（MB）。変更は次回起動時に適用されます。",
+    "memory_min_desc": "起動時の最小メモリ（MB）。変更は次回起動時に適用され、最大メモリ以下である必要があります。",
     "saved": "設定を保存しました",
     "server_properties": "サーバープロパティ",
     "server_plugins": "サーバープラグイン",

@@ -214,6 +214,8 @@
     "no_server": "Please select a server to edit config",
     "loading": "Loading config...",
     "no_config": "No config file found. Please start the server once to generate server.properties",
+    "memory_max_desc": "Maximum startup memory in MB. Changes apply on next restart.",
+    "memory_min_desc": "Minimum startup memory in MB. Changes apply on next restart and must be <= max memory.",
     "saved": "Config saved",
     "server_properties": "Server Properties",
     "server_plugins": "Server Plugins",

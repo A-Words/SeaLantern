@@ -209,6 +209,8 @@
     "no_server": "설정을 편집할 서버를 선택해주세요",
     "loading": "설정 로딩 중...",
     "no_config": "설정 파일을 찾을 수 없습니다. 서버를 한 번 실행하여 server.properties 파일을 생성해주세요",
+    "memory_max_desc": "시작 최대 메모리(MB)입니다. 변경 사항은 다음 시작 시 적용됩니다.",
+    "memory_min_desc": "시작 최소 메모리(MB)입니다. 변경 사항은 다음 시작 시 적용되며 최대 메모리 이하여야 합니다.",
     "saved": "설정이 저장되었습니다",
     "server_properties": "서버 속성",
     "server_plugins": "서버 플러그인",

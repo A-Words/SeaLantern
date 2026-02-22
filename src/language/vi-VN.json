@@ -206,6 +206,8 @@
     "no_server": "Vui lòng chọn máy chủ",
     "loading": "Đang tải cấu hình...",
     "no_config": "Không tìm thấy tệp cấu hình. Hãy khởi động máy chủ một lần để tạo server.properties",
+    "memory_max_desc": "Bộ nhớ khởi động tối đa (MB). Thay đổi sẽ áp dụng ở lần khởi động tiếp theo.",
+    "memory_min_desc": "Bộ nhớ khởi động tối thiểu (MB). Thay đổi sẽ áp dụng ở lần khởi động tiếp theo và phải <= bộ nhớ tối đa.",
     "saved": "Đã lưu cấu hình",
     "server_properties": "Thuộc tính máy chủ",
     "server_plugins": "Trình bổ sung máy chủ",

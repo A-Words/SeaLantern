@@ -5,8 +5,8 @@ import SLSpinner from "../components/common/SLSpinner.vue";
 import SLSwitch from "../components/common/SLSwitch.vue";
 import SLSelect from "../components/common/SLSelect.vue";
 import SLButton from "../components/common/SLButton.vue";
-import SLInput from "../components/common/SLInput.vue";
 import { configApi } from "../api/config";
+import { serverApi } from "../api/server";
 import { m_pluginApi, type m_PluginInfo, type m_PluginConfigFile } from "../api/mcs_plugins";
 import type { ConfigEntry as ConfigEntryType } from "../api/config";
 import { useServerStore } from "../stores/serverStore";
@@ -22,9 +22,7 @@ import {
   Edit,
 } from "lucide-vue-next";
 
-import ConfigToolbar from "../components/config/ConfigToolbar.vue";
 import ConfigCategories from "../components/config/ConfigCategories.vue";
-import ConfigEntry from "../components/config/ConfigEntry.vue";
 import { systemApi } from "../api/system";
 import "../styles/plugin-list.css";
 
@@ -48,17 +46,42 @@ const plugins = ref<m_PluginInfo[]>([]);
 const pluginsLoading = ref(false);
 const selectedPlugin = ref<m_PluginInfo | null>(null);
 const activeTab = ref<"properties" | "plugins">("properties");
-const isLoading = ref(false);
 const loadingDebounceTimer = ref<number | null>(null);
-const LOADING_DEBOUNCE_DELAY = 300;
 
 const autoSaveDebounceTimer = ref<number | null>(null);
 const AUTO_SAVE_DELAY = 1000;
+const MEMORY_KEYS = new Set(["max_memory", "min_memory"]);
+const pendingChangedKeys = ref<Set<string>>(new Set());
 
 const currentServerId = computed(() => store.currentServerId);
+const currentServer = computed(() => store.servers.find((s) => s.id === store.currentServerId));
+
+const memoryEntries = computed<ConfigEntryType[]>(() => [
+  {
+    key: "max_memory",
+    value: editValues.value.max_memory ?? "",
+    description: i18n.t("config.memory_max_desc"),
+    value_type: "number",
+    default_value: currentServer.value ? String(currentServer.value.max_memory) : "",
+    category: "performance",
+  },
+  {
+    key: "min_memory",
+    value: editValues.value.min_memory ?? "",
+    description: i18n.t("config.memory_min_desc"),
+    value_type: "number",
+    default_value: currentServer.value ? String(currentServer.value.min_memory) : "",
+    category: "performance",
+  },
+]);
+
+const entriesWithMemory = computed(() => {
+  const nonMemoryEntries = entries.value.filter((entry) => !MEMORY_KEYS.has(entry.key));
+  return [...nonMemoryEntries, ...memoryEntries.value];
+});
 
 const categories = computed(() => {
-  const cats = new Set(entries.value.map((e) => e.category));
+  const cats = new Set(entriesWithMemory.value.map((e) => e.category));
   return ["all", ...Array.from(cats)];
 });
 
@@ -77,7 +100,7 @@ const difficultyOptions = ref([
 ]);
 
 const filteredEntries = computed(() => {
-  return entries.value.filter((e: ConfigEntryType) => {
+  return entriesWithMemory.value.filter((e: ConfigEntryType) => {
     const matchCat = activeCategory.value === "all" || e.category === activeCategory.value;
     const matchSearch =
       !searchQuery.value ||
@@ -102,6 +125,7 @@ onUnmounted(() => {
   if (autoSaveDebounceTimer.value) {
     clearTimeout(autoSaveDebounceTimer.value);
   }
+  pendingChangedKeys.value.clear();
 });
 
 watch(
@@ -113,6 +137,37 @@ watch(
   },
 );
 
+function syncMemoryEditValues(target: Record<string, string>) {
+  if (!currentServer.value) {
+    target.max_memory = "";
+    target.min_memory = "";
+    return;
+  }
+
+  target.max_memory = String(currentServer.value.max_memory);
+  target.min_memory = String(currentServer.value.min_memory);
+}
+
+function parsePositiveMemory(value: string): number | null {
+  const memory = Number.parseInt(value, 10);
+  if (!Number.isFinite(memory) || memory <= 0) {
+    return null;
+  }
+  return memory;
+}
+
+function getEntryDescription(entry: ConfigEntryType): string {
+  if (entry.key === "max_memory") {
+    return i18n.t("config.memory_max_desc");
+  }
+  if (entry.key === "min_memory") {
+    return i18n.t("config.memory_min_desc");
+  }
+  const key = `config.properties.${entry.key}`;
+  const description = i18n.t(key);
+  return description === key ? "" : description;
+}
+
 async function loadProperties() {
   if (!serverPath.value) return;
 
@@ -120,39 +175,29 @@ async function loadProperties() {
     clearTimeout(loadingDebounceTimer.value);
   }
 
-  isLoading.value = true;
+  loading.value = true;
   error.value = null;
   try {
     const result = await configApi.readServerProperties(serverPath.value);
     entries.value = result.entries as ConfigEntryType[];
-    editValues.value = { ...result.raw };
+    const nextValues = { ...result.raw };
+    syncMemoryEditValues(nextValues);
+    editValues.value = nextValues;
   } catch (e) {
     error.value = String(e);
     entries.value = [];
-    editValues.value = {};
+    const nextValues: Record<string, string> = {};
+    syncMemoryEditValues(nextValues);
+    editValues.value = nextValues;
   } finally {
-    isLoading.value = false;
+    pendingChangedKeys.value.clear();
+    loading.value = false;
   }
 }
 
-async function saveProperties() {
-  if (!serverPath.value) return;
-  saving.value = true;
-  error.value = null;
-  successMsg.value = null;
-  try {
-    await configApi.writeServerProperties(serverPath.value, editValues.value);
-    successMsg.value = i18n.t("config.saved");
-    setTimeout(() => (successMsg.value = null), 3000);
-  } catch (e) {
-    error.value = String(e);
-  } finally {
-    saving.value = false;
-  }
-}
-
-function updateValue(key: string, value: string | boolean) {
+function updateValue(key: string, value: string | number | boolean) {
   editValues.value[key] = String(value);
+  pendingChangedKeys.value.add(key);
 
   // 启动自动保存防抖
   if (autoSaveDebounceTimer.value) {
@@ -160,31 +205,72 @@ function updateValue(key: string, value: string | boolean) {
   }
 
   autoSaveDebounceTimer.value = window.setTimeout(() => {
-    autoSaveProperties();
+    void autoSaveProperties();
   }, AUTO_SAVE_DELAY);
 }
 
-function autoSaveProperties() {
-  if (!serverPath.value) return;
+async function autoSaveProperties() {
+  if (!currentServerId.value) return;
+
+  const changedKeys = Array.from(pendingChangedKeys.value);
+  pendingChangedKeys.value.clear();
+  if (changedKeys.length === 0) return;
+
+  const shouldWriteProperties =
+    !!serverPath.value && entries.value.length > 0 && changedKeys.some((key) => !MEMORY_KEYS.has(key));
+  const shouldValidateMemory = changedKeys.some((key) => MEMORY_KEYS.has(key));
+
+  const maxMemory = parsePositiveMemory(editValues.value.max_memory ?? "");
+  const minMemory = parsePositiveMemory(editValues.value.min_memory ?? "");
+  const shouldUpdateMemory =
+    shouldValidateMemory &&
+    maxMemory !== null &&
+    minMemory !== null &&
+    minMemory <= maxMemory &&
+    !!currentServer.value &&
+    (currentServer.value.max_memory !== maxMemory || currentServer.value.min_memory !== minMemory);
+
+  if (!shouldWriteProperties && !shouldUpdateMemory) return;
 
   saving.value = true;
   error.value = null;
   successMsg.value = null;
 
-  configApi
-    .writeServerProperties(serverPath.value, editValues.value)
-    .then(() => {
-      successMsg.value = i18n.t("config.saved");
-      setTimeout(() => (successMsg.value = null), 3000);
-      return Promise.resolve();
-    })
-    .catch((e) => {
-      error.value = String(e);
-      return Promise.resolve();
-    })
-    .finally(() => {
-      saving.value = false;
-    });
+  let firstError: string | null = null;
+  let hasSuccess = false;
+
+  if (shouldWriteProperties && serverPath.value) {
+    const propertyValues = Object.fromEntries(
+      Object.entries(editValues.value).filter(([key]) => !MEMORY_KEYS.has(key)),
+    );
+    try {
+      await configApi.writeServerProperties(serverPath.value, propertyValues);
+      hasSuccess = true;
+    } catch (e) {
+      firstError = String(e);
+    }
+  }
+
+  if (shouldUpdateMemory && maxMemory !== null && minMemory !== null) {
+    try {
+      await serverApi.updateServerMemory(currentServerId.value, maxMemory, minMemory);
+      await store.refreshList();
+      hasSuccess = true;
+    } catch (e) {
+      if (!firstError) {
+        firstError = String(e);
+      }
+    }
+  }
+
+  if (firstError) {
+    error.value = firstError;
+  } else if (hasSuccess) {
+    successMsg.value = i18n.t("config.saved");
+    setTimeout(() => (successMsg.value = null), 3000);
+  }
+
+  saving.value = false;
 }
 
 function handleCategoryChange(category: string) {
@@ -292,8 +378,6 @@ function formatFileSize(bytes: number) {
   return (bytes / (1024 * 1024)).toFixed(2) + " MB";
 }
 
-const currentServer = computed(() => store.servers.find((s) => s.id === store.currentServerId));
-
 watch(
   () => store.currentServerId,
   async () => {
@@ -369,8 +453,8 @@ onActivated(async () => {
               <div class="entry-key-row">
                 <span class="entry-key text-mono">{{ entry.key }}</span>
               </div>
-              <p v-if="i18n.t(`config.properties.${entry.key}`)" class="entry-desc text-caption">
-                {{ i18n.t(`config.properties.${entry.key}`) }}
+              <p v-if="getEntryDescription(entry)" class="entry-desc text-caption">
+                {{ getEntryDescription(entry) }}
               </p>
             </div>
             <div class="entry-control">
@@ -409,7 +493,7 @@ onActivated(async () => {
                   :placeholder="entry.default_value"
                   @input="
                     (e) => {
-                      const value = e.target.value;
+                      const value = (e.target as HTMLInputElement).value;
                       if (value === '' || /^\d+$/.test(value)) {
                         updateValue(entry.key, value);
                       }

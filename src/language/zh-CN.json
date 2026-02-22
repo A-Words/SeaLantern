@@ -211,6 +211,8 @@
     "no_server": "请选择一个服务器来编辑配置",
     "loading": "加载配置中...",
     "no_config": "没有找到配置文件，请先启动一次服务器以生成 server.properties",
+    "memory_max_desc": "服务器启动最大内存（MB），修改后将在下次启动生效",
+    "memory_min_desc": "服务器启动最小内存（MB），修改后将在下次启动生效，且不能大于最大内存",
     "saved": "配置已保存",
     "server_properties": "服务器属性",
     "server_plugins": "服务器插件",
